@@ -1,11 +1,11 @@
 from typing import Callable, List
 
 from backend.agents.roles import CHAIR, CHEF, NUTRITION
-from backend.llm.mock_client import MockLLMClient
+from backend.llm.factory import get_llm_client
 from backend.models import DiscussionEvent, FollowUpResponse, FollowUpState, FullRecipe
 
 EventCallback = Callable[[DiscussionEvent], None]
-llm = MockLLMClient()
+llm = get_llm_client()
 
 
 def _emit(event_callback: EventCallback | None, event: DiscussionEvent) -> None:
