@@ -1,0 +1,28 @@
+# FastAPI and server
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# Pydantic
+pydantic>=2.5.0
+
+# Database
+sqlmodel>=0.0.14
+aiosqlite>=0.19.0
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# LangGraph for multi-agent orchestration
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# WebSocket
+websockets>=12.0
+
+# Async support
+anyio>=4.2.0
+
+# Development
+python-dotenv>=1.0.0
