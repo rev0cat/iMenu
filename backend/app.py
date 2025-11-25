@@ -1,4 +1,5 @@
 import json
+import asyncio
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -83,12 +84,16 @@ async def ws_generate_recipe(websocket: WebSocket):
         data = await websocket.receive_text()
         request = CookingRequest(**json.loads(data))
 
-        import asyncio
+        loop = asyncio.get_running_loop()
 
         def callback(event: DiscussionEvent):
-            asyncio.create_task(websocket.send_text(json.dumps(event.dict())))
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_text(json.dumps(event.dict())), loop
+            )
 
-        recipe_service.generate_recipe_stream(user.id, request, event_callback=callback)
+        await loop.run_in_executor(
+            None, lambda: recipe_service.generate_recipe_stream(user.id, request, event_callback=callback)
+        )
         await websocket.send_text(json.dumps({"event_type": "stream_completed"}))
     except WebSocketDisconnect:
         return
@@ -107,17 +112,22 @@ async def ws_follow_up(websocket: WebSocket):
         payload = json.loads(data)
         request = FollowUpRequest(**payload)
 
-        import asyncio
+        loop = asyncio.get_running_loop()
 
         def callback(event: DiscussionEvent):
-            asyncio.create_task(websocket.send_text(json.dumps(event.dict())))
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_text(json.dumps(event.dict())), loop
+            )
 
-        followup_service.followup_stream(
-            user.id,
-            request.session_id,
-            request.question,
-            request.max_review_rounds or 1,
-            event_callback=callback,
+        await loop.run_in_executor(
+            None,
+            lambda: followup_service.followup_stream(
+                user.id,
+                request.session_id,
+                request.question,
+                request.max_review_rounds or 1,
+                event_callback=callback,
+            ),
         )
         await websocket.send_text(json.dumps({"event_type": "stream_completed"}))
     except WebSocketDisconnect:

@@ -1,8 +1,7 @@
 from typing import Callable
-from typing import Callable
 
-from backend.state import build_followup_state, EventBuffer
-from backend.models import DiscussionEvent, FollowUpResponse, CookingRequest, FullRecipe
+from backend.state import EventBuffer, build_followup_state
+from backend.models import CookingRequest, DiscussionEvent, FollowUpResponse, FullRecipe
 from backend.graphs import followup_graph
 from backend.db import repositories
 
