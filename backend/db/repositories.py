@@ -115,9 +115,13 @@ def save_discussion_events(
 ) -> None:
     """Save discussion events for a session."""
     for event in events:
+        # Convert datetime to ISO string for JSON serialization
+        event_dict = event.model_dump()
+        if event_dict.get("timestamp"):
+            event_dict["timestamp"] = event_dict["timestamp"].isoformat()
         record = DiscussionEventRecord(
             session_id=session_id,
-            event_json=event.model_dump()
+            event_json=event_dict
         )
         session.add(record)
     session.commit()

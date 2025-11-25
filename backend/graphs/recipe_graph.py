@@ -110,18 +110,33 @@ def run_recipe_graph(
     Returns:
         Final OrchestratorState with the generated recipe.
     """
-    # Create initial state
-    initial_state = OrchestratorState(
-        request=request,
-        user_id=user_id
-    )
+    # Create initial state as dict for LangGraph
+    initial_state = {
+        "request": request,
+        "user_id": user_id,
+        "ingredients": [],
+        "tools": [],
+        "constraints": None,
+        "base_dish_plan": None,
+        "current_steps": [],
+        "expert_opinions": [],
+        "expert_objections": [],
+        "final_recipe": None,
+        "current_round": 0,
+        "max_review_rounds": 1,
+        "should_stop": False,
+        "events": []
+    }
     
     # Create and compile the graph
     workflow = create_recipe_graph()
     app = workflow.compile()
     
     # Run the graph
-    final_state = app.invoke(initial_state)
+    result = app.invoke(initial_state)
+    
+    # Convert result dict back to OrchestratorState
+    final_state = OrchestratorState(**result)
     
     return final_state
 
@@ -142,11 +157,23 @@ def run_recipe_graph_stream(
     Returns:
         Final OrchestratorState with the generated recipe.
     """
-    # Create initial state
-    initial_state = OrchestratorState(
-        request=request,
-        user_id=user_id
-    )
+    # Create initial state as dict
+    initial_state = {
+        "request": request,
+        "user_id": user_id,
+        "ingredients": [],
+        "tools": [],
+        "constraints": None,
+        "base_dish_plan": None,
+        "current_steps": [],
+        "expert_opinions": [],
+        "expert_objections": [],
+        "final_recipe": None,
+        "current_round": 0,
+        "max_review_rounds": 1,
+        "should_stop": False,
+        "events": []
+    }
     
     # Create and compile the graph
     workflow = create_recipe_graph()
@@ -154,7 +181,7 @@ def run_recipe_graph_stream(
     
     # Track seen events to avoid duplicates
     seen_event_ids = set()
-    final_state = None
+    final_result = None
     
     # Stream through the graph
     for state_update in app.stream(initial_state):
@@ -168,17 +195,17 @@ def run_recipe_graph_stream(
                     if event_id not in seen_event_ids:
                         seen_event_ids.add(event_id)
                         event_callback(event)
-            elif isinstance(node_output, OrchestratorState):
-                final_state = node_output
-                # Send any new events from state
-                for event in node_output.events:
-                    event_id = f"{event.event_type}_{event.round_index}_{event.expert_name}_{event.timestamp}"
-                    if event_id not in seen_event_ids:
-                        seen_event_ids.add(event_id)
-                        event_callback(event)
+            # Keep track of final result
+            final_result = node_output
     
-    # Get final state if not captured
-    if final_state is None:
-        final_state = app.invoke(initial_state)
+    # Get final state
+    if final_result is None:
+        final_result = app.invoke(initial_state)
+    
+    # Convert to OrchestratorState
+    if isinstance(final_result, dict):
+        final_state = OrchestratorState(**final_result)
+    else:
+        final_state = final_result
     
     return final_state

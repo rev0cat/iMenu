@@ -80,19 +80,29 @@ def run_followup_graph(
     Returns:
         Final FollowUpState with the answer.
     """
-    initial_state = FollowUpState(
-        session_id=session_id,
-        original_request=original_request,
-        original_recipe=original_recipe,
-        question=question,
-        max_review_rounds=max_review_rounds,
-        user_id=user_id
-    )
+    initial_state = {
+        "session_id": session_id,
+        "original_request": original_request,
+        "original_recipe": original_recipe,
+        "question": question,
+        "max_review_rounds": max_review_rounds,
+        "current_round": 0,
+        "expert_opinions": [],
+        "expert_objections": [],
+        "answer": None,
+        "updated_recipe": None,
+        "should_stop": False,
+        "events": [],
+        "user_id": user_id
+    }
     
     workflow = create_followup_graph()
     app = workflow.compile()
     
-    final_state = app.invoke(initial_state)
+    result = app.invoke(initial_state)
+    
+    # Convert to FollowUpState
+    final_state = FollowUpState(**result)
     
     return final_state
 
@@ -121,20 +131,27 @@ def run_followup_graph_stream(
     Returns:
         Final FollowUpState with the answer.
     """
-    initial_state = FollowUpState(
-        session_id=session_id,
-        original_request=original_request,
-        original_recipe=original_recipe,
-        question=question,
-        max_review_rounds=max_review_rounds,
-        user_id=user_id
-    )
+    initial_state = {
+        "session_id": session_id,
+        "original_request": original_request,
+        "original_recipe": original_recipe,
+        "question": question,
+        "max_review_rounds": max_review_rounds,
+        "current_round": 0,
+        "expert_opinions": [],
+        "expert_objections": [],
+        "answer": None,
+        "updated_recipe": None,
+        "should_stop": False,
+        "events": [],
+        "user_id": user_id
+    }
     
     workflow = create_followup_graph()
     app = workflow.compile()
     
     seen_event_ids = set()
-    final_state = None
+    final_result = None
     
     for state_update in app.stream(initial_state):
         for node_name, node_output in state_update.items():
@@ -145,15 +162,15 @@ def run_followup_graph_stream(
                     if event_id not in seen_event_ids:
                         seen_event_ids.add(event_id)
                         event_callback(event)
-            elif isinstance(node_output, FollowUpState):
-                final_state = node_output
-                for event in node_output.events:
-                    event_id = f"{event.event_type}_{event.round_index}_{event.expert_name}_{event.timestamp}"
-                    if event_id not in seen_event_ids:
-                        seen_event_ids.add(event_id)
-                        event_callback(event)
+            final_result = node_output
     
-    if final_state is None:
-        final_state = app.invoke(initial_state)
+    if final_result is None:
+        final_result = app.invoke(initial_state)
+    
+    # Convert to FollowUpState
+    if isinstance(final_result, dict):
+        final_state = FollowUpState(**final_result)
+    else:
+        final_state = final_result
     
     return final_state
