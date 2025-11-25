@@ -265,12 +265,32 @@ fun CookingCommitteeApp(
                                     
                                     // Extract final recipe from complete event
                                     if (event.eventType == "complete") {
-                                        val recipeJson = event.payload["recipe"]?.jsonObject
-                                        // Note: In a real app, we'd parse this properly
-                                        discussionUiState = discussionUiState.copy(
-                                            isComplete = true,
-                                            isLoading = false
-                                        )
+                                        try {
+                                            val recipeJson = event.payload["recipe"]
+                                            if (recipeJson != null) {
+                                                val json = com.example.cookingcommittee.data.api.ApiClient.getJson()
+                                                val recipe = json.decodeFromJsonElement(
+                                                    FullRecipeDto.serializer(),
+                                                    recipeJson
+                                                )
+                                                discussionUiState = discussionUiState.copy(
+                                                    isComplete = true,
+                                                    isLoading = false,
+                                                    finalRecipe = recipe
+                                                )
+                                                currentRecipe = recipe
+                                            } else {
+                                                discussionUiState = discussionUiState.copy(
+                                                    isComplete = true,
+                                                    isLoading = false
+                                                )
+                                            }
+                                        } catch (e: Exception) {
+                                            discussionUiState = discussionUiState.copy(
+                                                isComplete = true,
+                                                isLoading = false
+                                            )
+                                        }
                                     }
                                 }
                         } catch (e: Exception) {

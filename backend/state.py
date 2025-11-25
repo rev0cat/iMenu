@@ -20,7 +20,12 @@ from models import (
 
 
 def add_to_list(existing: List[Any], new: Any) -> List[Any]:
-    """Reducer for appending items to a list."""
+    """
+    Reducer for appending items to a list.
+    
+    Note: This function intentionally creates new lists instead of mutating in-place.
+    LangGraph requires immutable state updates for proper state tracking and checkpointing.
+    """
     if isinstance(new, list):
         return existing + new
     return existing + [new]
